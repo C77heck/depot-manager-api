@@ -22,6 +22,7 @@ export interface UserDocument extends Document {
 
 export interface PublicUserData extends Pick<UserDocument, 'email' | '_id' | 'firstName' | 'lastName'> {
     isBlocked: boolean;
+    userId: string;
 }
 
 export type UserModel = Mongoose.Model<UserDocument, {}, {}>;

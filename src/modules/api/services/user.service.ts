@@ -67,23 +67,18 @@ class UserService extends Provider {
             throw new Forbidden('Invalid credentials, please try again.');
         }
 
-        const isBlocked = await this.getIsLoginBlocked(user);
+        await this.checkIfLoginIsBlocked(user);
 
-        if (isBlocked) {
-            throw new Forbidden('You have made too many unsuccessful login attempts. Please wait for 3 minutes and try again.\n');
-        }
-
-        let isValidPassword = false;
         try {
-            isValidPassword = await bcrypt.compare(password, user.password);
-        } catch (err) {
-            throw new Forbidden('Could not log you in, please check your credentials and try again');
-        }
+            const isValidPassword = await bcrypt.compare(password, user.password);
 
-        if (!isValidPassword) {
+            if (!isValidPassword) {
+                throw new Forbidden(ERROR_MESSAGES.INVALID_LOGIN);
+            }
+        } catch (err) {
             await this.addLoginAttempt(user);
 
-            throw new Forbidden('Could not log you in, please check your credentials and try again');
+            throw err;
         }
 
         await this.resetAttempts(user);
@@ -95,7 +90,7 @@ class UserService extends Provider {
                 { expiresIn: '24h' }
             );
         } catch (err) {
-            throw new InternalServerError('Login failed, please try again');
+            throw new InternalServerError(ERROR_MESSAGES.FAILED_LOGIN);
         }
 
         return { user, token };
@@ -161,6 +156,7 @@ class UserService extends Provider {
 
     public async getPublicData(user: UserDocument): Promise<PublicUserData> {
         return {
+            userId: user._id,
             firstName: user.firstName,
             lastName: user.lastName,
             email: user.email,
@@ -195,9 +191,9 @@ class UserService extends Provider {
         return securityQuestion;
     }
 
-    private async getIsLoginBlocked(user: UserDocument) {
+    private async checkIfLoginIsBlocked(user: UserDocument) {
         if (!user.loginStatus.isBlocked) {
-            return false;
+            return;
         }
 
         if (user.loginStatus.timeBlocked <= Date.now()) {
@@ -205,13 +201,21 @@ class UserService extends Provider {
             user.loginStatus.attempts = 0;
             await user.save();
 
-            return false;
+            return;
         }
 
-        return true;
+        throw new Unauthorized(ERROR_MESSAGES.TOO_MANY_ATTEMPTS);
     }
 
     private async addLoginAttempt(user: UserDocument) {
+        if (user.loginStatus.attempts > 5) {
+            user.loginStatus.isBlocked = true;
+            user.loginStatus.timeBlocked = Date.now() + (3 * 60 * 1000);
+
+            await user.save();
+
+            throw new Unauthorized(ERROR_MESSAGES.TOO_MANY_ATTEMPTS);
+        }
         user.loginStatus.attempts++;
 
         return user.save();
@@ -219,7 +223,7 @@ class UserService extends Provider {
 
     private async getIsForgottenPasswordBlocked(user: UserDocument) {
         if (!user.forgotPasswordStatus.isBlocked) {
-            return false;
+            return;
         }
 
         if (user.forgotPasswordStatus.timeBlocked <= Date.now()) {
@@ -228,10 +232,10 @@ class UserService extends Provider {
 
             await user.save();
 
-            return false;
+            return;
         }
 
-        return true;
+        throw new Unauthorized(ERROR_MESSAGES.TOO_MANY_ATTEMPTS);
     }
 
     private async resetAttempts(user: UserDocument) {

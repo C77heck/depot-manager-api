@@ -78,7 +78,6 @@ export class UserController extends ExpressController {
             res.json({
                 payload: {
                     ...userData,
-                    userId: user.id,
                     token: token,
                 }
             });
@@ -98,7 +97,6 @@ export class UserController extends ExpressController {
             res.json({
                 payload: {
                     ...userData,
-                    userId: user.id,
                     token: token,
                 }
             });

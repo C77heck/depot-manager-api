@@ -13,7 +13,10 @@ export const ERROR_MESSAGES = {
     INVALID_TOKEN: 'Invalid token',
     EXPIRED_TOKEN: 'Expired token',
     WRONG_ANSWER: 'Wrong answer provided',
+    FAILED_LOGIN: 'Login failed, please try again',
+    TOO_MANY_ATTEMPTS: 'You have made too many unsuccessful login attempts. Please wait for 3 minutes and try again.',
     PASSWORD_SAME: 'Password cannot be the same as your old one',
+    INVALID_LOGIN: 'Could not log you in, please check your credentials and try again',
 };
 
 export const MESSAGE = {
