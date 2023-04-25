@@ -147,13 +147,13 @@ class UserService extends Provider {
     }
 
     public async updateUser(user: UserDocument, data: UserDocument) {
-        return user.update({ ...user, ...data });
+        return user.update({ ...data });
     }
 
     public async setPassword(user: UserDocument, password: string) {
         const hashedPassword = await bcrypt.hash(password, 12);
-
-        return user.update({ ...user, password: hashedPassword });
+        
+        return user.update({ password: hashedPassword });
     }
 
     public async getPublicData(user: UserDocument): Promise<PublicUserData> {

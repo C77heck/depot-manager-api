@@ -164,7 +164,7 @@ export class UserController extends ExpressController {
 
             res.json({
                 payload: {
-                    message: MESSAGE.SUCCESS
+                    message: MESSAGE.SUCCESS.GENERIC
                 }
             });
         } catch (err) {

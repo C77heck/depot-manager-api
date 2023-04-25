@@ -10,8 +10,10 @@ export const ERROR_MESSAGES = {
         AD: 'Ad not found',
     },
     GENERIC: 'Something went wrong. Please try again later.',
-    INVALID_TOKEN: 'Invalid token!',
+    INVALID_TOKEN: 'Invalid token',
+    EXPIRED_TOKEN: 'Expired token',
     WRONG_ANSWER: 'Wrong answer provided',
+    PASSWORD_SAME: 'Password cannot be the same as your old one',
 };
 
 export const MESSAGE = {

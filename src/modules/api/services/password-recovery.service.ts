@@ -57,8 +57,8 @@ class PasswordRecoveryService extends Provider {
         try {
             const recovery = await this.collection.findOne({ token });
 
-            if (!recovery) {
-                throw new Forbidden(ERROR_MESSAGES.INVALID_TOKEN);
+            if (!recovery || recovery.fulfilled) {
+                throw new Forbidden(ERROR_MESSAGES.EXPIRED_TOKEN);
             }
 
             await recovery.populate('user');
