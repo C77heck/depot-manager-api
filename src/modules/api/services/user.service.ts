@@ -147,12 +147,15 @@ class UserService extends Provider {
     }
 
     public async updateUser(user: UserDocument, data: UserDocument) {
-        return user.update({ ...data });
+        return user.update({
+            firstName: data?.firstName ?? user.firstName,
+            lastName: data?.lastName ?? user.lastName
+        });
     }
 
     public async setPassword(user: UserDocument, password: string) {
         const hashedPassword = await bcrypt.hash(password, 12);
-        
+
         return user.update({ password: hashedPassword });
     }
 
