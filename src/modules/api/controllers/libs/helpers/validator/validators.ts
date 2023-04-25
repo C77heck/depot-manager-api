@@ -8,6 +8,7 @@ export type ValidatorFunction = (value: any) => ValidationResponse;
 export type LengthValidatorFunction = (length: number) => ValidatorFunction;
 
 export const required: ValidatorFunction = (value: any): ValidationResponse => {
+    console.log({ value });
     if (!value) {
         return {
             isValid: false,

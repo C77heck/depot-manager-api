@@ -1,5 +1,3 @@
-export const CONSTANTS = { REDIS: ['honest-jobs'] };
-
 export const ERROR_MESSAGES = {
     MISSING: {
         EMAIL: 'Email is missing!',
@@ -13,7 +11,7 @@ export const ERROR_MESSAGES = {
     },
     GENERIC: 'Something went wrong. Please try again later.',
     INVALID_TOKEN: 'Invalid token!',
-    AD_EXPIRED: 'Ad expired',
+    WRONG_ANSWER: 'Wrong answer provided',
 };
 
 export const MESSAGE = {

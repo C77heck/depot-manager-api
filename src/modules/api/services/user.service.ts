@@ -1,26 +1,25 @@
 import * as bcrypt from 'bcryptjs';
 import express from 'express';
 import * as jwt from 'jsonwebtoken';
-import Mongoose, { startSession } from 'mongoose';
+import { startSession } from 'mongoose';
 import { BadRequest, Forbidden, InternalServerError, Unauthorized } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
 import { ERROR_MESSAGES } from '../../../libs/constants';
-import User, { UserDocument } from '../models/documents/user.document';
+import User, { PublicUserData, UserDocument, UserModel } from '../models/documents/user-document/user.document';
 
 class UserService extends Provider {
-    public collection: Mongoose.Model<UserDocument, {}> = User;
+    private collection: UserModel = User;
 
     public async register(req: express.Request) {
         const session = await startSession();
         session.startTransaction();
 
         try {
-            const { email, password } = req.body;
-
-            const existingUser = await User.findOne({ email: email });
+            const { email, password, firstName, lastName, securityQuestion, securityAnswer } = req.body;
+            const existingUser = await this.collection.findOne({ email: email });
 
             if (existingUser) {
-                throw new BadRequest('The email you entered, is already in use', { session });
+                throw new BadRequest('The email you entered, is already in use');
             }
 
             let hashedPassword: string;
@@ -28,19 +27,23 @@ class UserService extends Provider {
             try {
                 hashedPassword = await bcrypt.hash(password, 12);
             } catch (err) {
-                throw new InternalServerError('Could not create user, please try again.', { session });
+                throw new InternalServerError('Could not create user, please try again.');
             }
 
             let createdUser: any;
             try {
                 createdUser = new this.collection({
-                    ...req.body,
+                    securityQuestion,
+                    securityAnswer,
+                    email,
+                    firstName,
+                    lastName,
                     password: hashedPassword
                 });
 
                 await createdUser.save();
             } catch (err) {
-                throw new InternalServerError('Could not create user, please try again.', { session });
+                throw new InternalServerError('Could not create user, please try again.');
             }
 
             await session.commitTransaction();
@@ -48,8 +51,8 @@ class UserService extends Provider {
 
             return this.login(req);
         } catch (err) {
-            await err.payload?.session?.abortTransaction();
-            await err.payload?.session?.endSession();
+            await session.abortTransaction();
+            await session.endSession();
 
             throw err;
         }
@@ -64,22 +67,26 @@ class UserService extends Provider {
             throw new Forbidden('Invalid credentials, please try again.');
         }
 
+        const isBlocked = await this.getIsLoginBlocked(user);
+
+        if (isBlocked) {
+            throw new Forbidden('You have made too many unsuccessful login attempts. Please wait for 3 minutes and try again.\n');
+        }
+
         let isValidPassword = false;
         try {
             isValidPassword = await bcrypt.compare(password, user.password);
         } catch (err) {
-            user.loginAttempts();
-
             throw new Forbidden('Could not log you in, please check your credentials and try again');
         }
 
         if (!isValidPassword) {
-            user.loginAttempts();
+            await this.addLoginAttempt(user);
 
             throw new Forbidden('Could not log you in, please check your credentials and try again');
         }
 
-        await user.loginAttempts(0);
+        await this.resetAttempts(user);
 
         let token;
         try {
@@ -125,26 +132,110 @@ class UserService extends Provider {
         return user;
     }
 
-    public async updateUser(req: express.Request, data: any) {
-        const user = await this.extractUser(req);
+    public async getUserByEmail(email: string): Promise<UserDocument> {
+        if (!email) {
+            throw new BadRequest(ERROR_MESSAGES.GENERIC);
+        }
 
-        return user.update(data);
-    }
-
-    public async getSecurityQuestion(req: express.Request) {
-        const user = await this.collection.findOne({ email: req.body.email });
+        const user = await this.collection.findOne({ email });
 
         if (!user) {
             throw new BadRequest(ERROR_MESSAGES.NOT_FOUND.USER);
         }
 
-        const securityQuestion = await user.getUserSecurityQuestion();
+        return user;
+    }
+
+    public async updateUser(user: UserDocument, data: UserDocument) {
+        return user.update({ ...user, ...data });
+    }
+
+    public async setPassword(user: UserDocument, password: string) {
+        const hashedPassword = await bcrypt.hash(password, 12);
+
+        return user.update({ ...user, password: hashedPassword });
+    }
+
+    public async getPublicData(user: UserDocument): Promise<PublicUserData> {
+        return {
+            firstName: user.firstName,
+            lastName: user.lastName,
+            email: user.email,
+            isBlocked: user.loginStatus.isBlocked,
+        };
+    }
+
+    public async checkSecurityAnswer(user: UserDocument, answer: string) {
+        const isMatch = user.securityAnswer === answer;
+
+        if (!isMatch) {
+            if (user.forgotPasswordStatus.attempts > 5) {
+                user.forgotPasswordStatus.isBlocked = true;
+                user.forgotPasswordStatus.timeBlocked = Date.now() + (3 * 60 * 1000);
+            } else {
+                user.forgotPasswordStatus.attempts++;
+            }
+
+            await user.save();
+        }
+
+        return isMatch;
+    }
+
+    public async getSecurityQuestion(user: UserDocument) {
+        const securityQuestion = user.securityQuestion;
 
         if (!securityQuestion) {
             throw new InternalServerError(ERROR_MESSAGES.GENERIC);
         }
 
         return securityQuestion;
+    }
+
+    private async getIsLoginBlocked(user: UserDocument) {
+        if (!user.loginStatus.isBlocked) {
+            return false;
+        }
+
+        if (user.loginStatus.timeBlocked <= Date.now()) {
+            user.loginStatus.isBlocked = false;
+            user.loginStatus.attempts = 0;
+            await user.save();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private async addLoginAttempt(user: UserDocument) {
+        user.loginStatus.attempts++;
+
+        return user.save();
+    }
+
+    private async getIsForgottenPasswordBlocked(user: UserDocument) {
+        if (!user.forgotPasswordStatus.isBlocked) {
+            return false;
+        }
+
+        if (user.forgotPasswordStatus.timeBlocked <= Date.now()) {
+            user.forgotPasswordStatus.isBlocked = false;
+            user.forgotPasswordStatus.attempts = 0;
+
+            await user.save();
+
+            return false;
+        }
+
+        return true;
+    }
+
+    private async resetAttempts(user: UserDocument) {
+        user.loginStatus.attempts = 0;
+        user.forgotPasswordStatus.attempts = 0;
+
+        return user.save();
     }
 }
 

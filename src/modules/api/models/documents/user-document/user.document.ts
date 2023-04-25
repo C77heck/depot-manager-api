@@ -8,35 +8,40 @@ export interface UserDocument extends Document {
     password: string;
     securityQuestion: string;
     securityAnswer: string;
-    status: {
+    loginStatus: {
         attempts: number;
         isBlocked: boolean;
+        timeBlocked: number;
     },
     forgotPasswordStatus: {
         attempts: number;
         isBlocked: boolean;
+        timeBlocked: number;
     },
-    getPublicData: () => Promise<PublicUserData>;
 }
 
-export type PublicUserData = Pick<UserDocument, 'email' | '_id' | 'firstName' | 'lastName'>
+export interface PublicUserData extends Pick<UserDocument, 'email' | '_id' | 'firstName' | 'lastName'> {
+    isBlocked: boolean;
+}
 
-export type UserModel = Mongoose.Model<UserDocument>;
+export type UserModel = Mongoose.Model<UserDocument, {}, {}>;
 
-const userSchema = new Schema<UserDocument>({
+const userSchema = new Schema<UserDocument, UserModel>({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
     email: { type: String, required: true, unique: true, match: /^[^\s@]+@[^\s@]+\.[^\s@]+$/ },
     password: { type: String, required: true },
-    status: {
-        attempts: { type: Number, required: false, default: 0 },
-        isBlocked: { type: Boolean, required: false, default: false }
+    loginStatus: {
+        attempts: { type: Number, default: 0 },
+        isBlocked: { type: Boolean, default: false },
+        timeBlocked: { type: Number, default: 0 }
     },
     securityQuestion: { type: String, required: true },
     securityAnswer: { type: String, required: true },
     forgotPasswordStatus: {
-        attempts: { type: Number, required: false, default: 0 },
-        isBlocked: { type: Boolean, required: false, default: false }
+        attempts: { type: Number, default: 0 },
+        isBlocked: { type: Boolean, default: false },
+        timeBlocked: { type: Number, default: 0 }
     },
 });
 

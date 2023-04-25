@@ -7,10 +7,12 @@ import { HttpError } from '../../application/models/errors';
 import { ProviderRegistry } from '../../application/provider.registry';
 import { ProductsController } from './controllers/products.controller';
 import { UserController } from './controllers/user.controller';
+import PasswordRecoveryService from './services/password-recovery.service';
+import ProductsService from './services/products.service';
 import UserService from './services/user.service';
 
 export class Server {
-    private port = process.env.PORT || 3131;
+    private port = process.env.PORT || 4322;
     private app: Express;
     private application: Application;
 
@@ -24,7 +26,8 @@ export class Server {
         this.app.use(cors());
         this.app.use(express.json());
         this.app.use(express.urlencoded({ extended: true }));
-        this.app.use('/api', this.application.controllers.propertyController.router);
+        this.app.use('/api/user', this.application.controllers.userController.router);
+        this.app.use('/api/products', this.application.controllers.productsController.router);
 
         this.app.use((err: HttpError, req: Request, res: Response, next: NextFunction) => {
             logger.err(err, true);
@@ -42,10 +45,12 @@ export class Server {
         const providerRegistry = ProviderRegistry.instance
             .registerServiceProviders([
                 UserService,
+                ProductsService,
+                PasswordRecoveryService,
             ])
             .registerControllerProviders([
                 UserController,
-                ProductsController
+                ProductsController,
             ])
             .boot();
 

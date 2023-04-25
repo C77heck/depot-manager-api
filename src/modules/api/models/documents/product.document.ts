@@ -1,39 +1,16 @@
 import Mongoose from 'mongoose';
-import mongoose, { Document } from 'mongoose';
-import { CrawlerTypes } from '../../../tasks/task-manager';
+import mongoose, { Document, Schema } from 'mongoose';
 
-const Schema = mongoose.Schema;
-
-export interface PropertyData {
-    location: string;
-    crawlerName: string;
-    address: string;
-    sqmPrice: number;
-    size: number;
-    total: number;
-    href: string;
+export interface ProductDocument extends Document {
+    name: string;
 }
 
-export interface PropertyDocument extends Document, PropertyData {
-    crawlerName: CrawlerTypes;
-}
+export type ProductModel = Mongoose.Model<ProductDocument, {}, {}>;
 
-export interface PropertyModel extends Mongoose.Model<PropertyDocument> {
-
-}
-
-const Property = new Schema<PropertyDocument>({
-    location: { type: String },
-    crawlerName: { type: String },
-    address: { type: String, index: 'text' },
-    sqmPrice: { type: Number },
-    size: { type: Number },
-    total: { type: Number },
-    href: { type: String }
+const productSchema = new Schema<ProductDocument, ProductModel>({
+    name: { type: String, required: true },
 });
 
-Property.index({ address: 'text' });
+productSchema.set('timestamps', true);
 
-Property.set('timestamps', true);
-
-export default mongoose.model<PropertyDocument, PropertyModel>('Property', Property);
+export default mongoose.model<ProductDocument, ProductModel>('Product', productSchema);
