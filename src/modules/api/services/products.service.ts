@@ -1,10 +1,20 @@
-import { NotFound } from '../../../application/models/errors';
+import { Inject } from '../../../application/libs/inject.decorator';
+import { Forbidden, NotFound } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
 import { ERROR_MESSAGES } from '../../../libs/constants';
 import { DepotDocument } from '../models/documents/depot.document';
 import Product, { ProductDocument, ProductModel } from '../models/documents/product.document';
+import { ResourceDocument } from '../models/documents/resource.document';
+import DepotService from './depot.service';
+import HookService from './hook.service';
 
 class ProductsService extends Provider {
+    @Inject()
+    public depotService: DepotService;
+
+    @Inject()
+    public hookService: HookService;
+
     private collection: ProductModel = Product;
 
     public async listByDepot(depot: DepotDocument): Promise<ProductDocument[]> {
@@ -25,19 +35,27 @@ class ProductsService extends Provider {
         return doc;
     }
 
-    public async create(data: ProductDocument, depotId: string): Promise<ProductDocument> {
+    public async create(data: ResourceDocument, depot: DepotDocument): Promise<ProductDocument> {
+        await this.checkCapacity(depot, 1);
+
+        this.hookService.$productHistory.next({ type: 'arrived', details: {} });
+
         return this.collection.create({
             ...data,
-            depot: depotId
+            depot: depot
         });
     }
 
-    public async update(id: string, data: ProductDocument, depotId: string): Promise<ProductDocument> {
+    public async update(id: string, depot: DepotDocument): Promise<ProductDocument> {
+        await this.checkCapacity(depot, 1);
+
         const existingDoc = await this.get(id);
+
+        this.hookService.$productHistory.next({ type: 'arrived', details: { from: existingDoc.depot, to: depot } });
 
         return existingDoc.update({
             ...existingDoc,
-            depot: depotId
+            depot: depot
         });
     }
 
@@ -45,6 +63,30 @@ class ProductsService extends Provider {
         const existingDoc = await this.get(id);
 
         return existingDoc.delete();
+    }
+
+    public async checkCapacity(depot: DepotDocument, requestedCapacity: number) {
+        const currentCapacity = await this.getCurrentCapacity(depot);
+        const availableCapacity = depot.maximumCapacity - currentCapacity;
+
+        if (availableCapacity < requestedCapacity) {
+            throw new Forbidden(ERROR_MESSAGES.CAPACITY_REACHED);
+        }
+    }
+
+    public async transfer(transferFromId: string, transferToId: string) {
+        const fromDepot = await this.depotService.get(transferFromId);
+        const toDepot = await this.depotService.get(transferToId);
+        const productsToTransfer = await this.listByDepot(fromDepot);
+        await this.checkCapacity(toDepot, productsToTransfer.length);
+
+        return Promise.all(productsToTransfer.map(product => {
+            this.hookService.$productHistory.next({ type: 'arrived', details: { from: product.depot, to: toDepot } });
+
+            product.depot = toDepot;
+
+            return product.save();
+        }));
     }
 }
 

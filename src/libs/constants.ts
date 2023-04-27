@@ -10,6 +10,7 @@ export const ERROR_MESSAGES = {
         AD: 'Ad not found',
     },
     GENERIC: 'Something went wrong. Please try again later.',
+    CAPACITY_REACHED: 'Products cannot be transfered due to lack of capacity in the selected depot',
     INVALID_TOKEN: 'Invalid token',
     EXPIRED_TOKEN: 'Expired token',
     WRONG_ANSWER: 'Wrong answer provided',

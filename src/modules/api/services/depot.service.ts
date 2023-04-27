@@ -1,9 +1,14 @@
+import { Inject } from '../../../application/libs/inject.decorator';
 import { NotFound } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
 import { ERROR_MESSAGES } from '../../../libs/constants';
 import Depot, { DepotDocument, DepotModel } from '../models/documents/depot.document';
+import ProductsService from './products.service';
 
 class DepotService extends Provider {
+    @Inject()
+    private productsService: ProductsService;
+
     private collection: DepotModel = Depot;
 
     public async list() {
@@ -38,10 +43,25 @@ class DepotService extends Provider {
         });
     }
 
-    public async delete(id: string) {
+    public async delete(id: string, transferDepotId: string, deleteType: DepotDocument['status']) {
         const existingDoc = await this.get(id);
 
-        return existingDoc.delete();
+        switch (deleteType) {
+            case 'temporary-closed':
+                existingDoc.status = 'temporary-closed';
+
+                await this.productsService.transfer(id, transferDepotId);
+
+                return existingDoc.save();
+            case 'closed':
+                existingDoc.status = 'closed';
+
+                await this.productsService.transfer(id, transferDepotId);
+
+                return existingDoc.delete();
+            default:
+                return null;
+        }
     }
 }
 

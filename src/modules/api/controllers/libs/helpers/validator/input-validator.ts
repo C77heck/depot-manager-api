@@ -4,7 +4,7 @@ import { ValidatorFunction } from './validators';
 
 export interface Validate {
     validators: ValidatorFunction[];
-    formatters: FormatterFunction<any>[];
+    formatters?: FormatterFunction<any>[];
 }
 
 export const validate = (fields: Record<string, Validate>, req: express.Request, res: express.Response, next: express.NextFunction) => {

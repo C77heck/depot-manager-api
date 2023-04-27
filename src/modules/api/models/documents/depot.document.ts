@@ -3,7 +3,7 @@ import mongoose, { Document, Schema } from 'mongoose';
 
 export interface DepotDocument extends Document {
     name: string;
-    status: 'open' | 'closed';
+    status: 'open' | 'temporary-closed' | 'closed';
     maximumCapacity: number;
 }
 

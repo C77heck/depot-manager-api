@@ -21,7 +21,7 @@ export class UserController extends ExpressController {
         this.router.post('/login', [
             validate.bind(this, {
                 email: { validators: [required, email], formatters: [trim] },
-                password: { validators: [required], formatters: [] },
+                password: { validators: [required] },
             })
         ], this.login.bind(this));
 
@@ -48,17 +48,17 @@ export class UserController extends ExpressController {
         this.router.post('/register', [
             validate.bind(this, {
                 email: { validators: [required, email], formatters: [trim] },
-                firstName: { validators: [required], formatters: [] },
-                lastName: { validators: [required], formatters: [] },
+                firstName: { validators: [required] },
+                lastName: { validators: [required] },
                 securityAnswer: { validators: [required], formatters: [trim] },
-                securityQuestion: { validators: [required], formatters: [] },
+                securityQuestion: { validators: [required] },
             })
         ], this.register.bind(this));
 
         this.router.put('/update', [
             validate.bind(this, {
-                firstName: { validators: [required], formatters: [] },
-                lastName: { validators: [required], formatters: [] }
+                firstName: { validators: [required] },
+                lastName: { validators: [required] }
             })
         ], this.updateUserData.bind(this));
 

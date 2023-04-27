@@ -4,6 +4,8 @@ import { handleError } from '../../../libs/handle-error';
 import { ExpressController } from '../controllers/libs/express.controller';
 import DepotService from '../services/depot.service';
 import ProductsService from '../services/products.service';
+import { validate } from './libs/helpers/validator/input-validator';
+import { required } from './libs/helpers/validator/validators';
 
 export class DepotController extends ExpressController {
     @Inject()
@@ -15,9 +17,27 @@ export class DepotController extends ExpressController {
     public routes() {
         this.router.get('/', [], this.index.bind(this));
         this.router.get('/:id', [], this.show.bind(this));
-        this.router.post('/', [], this.create.bind(this));
-        this.router.put('/:id', [], this.update.bind(this));
-        this.router.delete('/:id', [], this.delete.bind(this));
+        this.router.post('/', [
+            validate.bind(this, {
+                name: { validators: [required] },
+                maximumCapacity: { validators: [required] },
+            })
+        ], this.create.bind(this));
+
+        this.router.put('/:id', [
+            validate.bind(this, {
+                name: { validators: [required] },
+                maximumCapacity: { validators: [required] },
+            })
+        ], this.update.bind(this));
+
+        this.router.delete('/:id', [
+            validate.bind(this, {
+                id: { validators: [required] },
+                deleteType: { validators: [required] },
+                transferDepotId: { validators: [required] },
+            })
+        ], this.delete.bind(this));
     }
 
     private async index(req: express.Request, res: express.Response, next: NextFunction) {
@@ -66,7 +86,11 @@ export class DepotController extends ExpressController {
 
     private async delete(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const data = await this.depotService.delete(req.params?.id);
+            const id = req.body?.id;
+            const transferDepotId = req.body?.transferDepotId;
+            const deleteType = req.body?.deleteType;
+
+            const data = await this.depotService.delete(id, transferDepotId, deleteType);
 
             res.status(200).json({ payload: data });
         } catch (err) {

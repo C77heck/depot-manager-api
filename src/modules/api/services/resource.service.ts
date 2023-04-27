@@ -1,5 +1,7 @@
 import superagent from 'superagent';
+import { NotFound } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
+import { ERROR_MESSAGES } from '../../../libs/constants';
 import { ProductDocument } from '../models/documents/product.document';
 import Resource, { ResourceDocument, ResourceModel } from '../models/documents/resource.document';
 
@@ -47,6 +49,16 @@ class ResourceService extends Provider {
         } catch (e) {
             return false;
         }
+    }
+
+    public async get(id: string): Promise<ResourceDocument> {
+        const doc = await this.collection.findById(id);
+
+        if (!doc) {
+            throw new NotFound(ERROR_MESSAGES.NOT_FOUND.DOCUMENT);
+        }
+
+        return doc;
     }
 }
 

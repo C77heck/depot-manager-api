@@ -9,6 +9,8 @@ import { DepotController } from './controllers/depot.controller';
 import { ProductsController } from './controllers/products.controller';
 import { UserController } from './controllers/user.controller';
 import DepotService from './services/depot.service';
+import HistoryService from './services/history.service';
+import HookService from './services/hook.service';
 import PasswordRecoveryService from './services/password-recovery.service';
 import ProductsService from './services/products.service';
 import ResourceService from './services/resource.service';
@@ -52,6 +54,8 @@ export class Server {
                 PasswordRecoveryService,
                 ResourceService,
                 DepotService,
+                HookService,
+                HistoryService,
             ])
             .registerControllerProviders([
                 UserController,
