@@ -6,7 +6,7 @@ export const ERROR_MESSAGES = {
     },
     NOT_FOUND: {
         USER: 'User not found!',
-        APPLICANT: 'User not found!',
+        DOCUMENT: 'document not found!',
         AD: 'Ad not found',
     },
     GENERIC: 'Something went wrong. Please try again later.',

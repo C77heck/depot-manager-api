@@ -5,10 +5,13 @@ import logger from 'jet-logger';
 import { Application } from '../../application/application';
 import { HttpError } from '../../application/models/errors';
 import { ProviderRegistry } from '../../application/provider.registry';
+import { DepotController } from './controllers/depot.controller';
 import { ProductsController } from './controllers/products.controller';
 import { UserController } from './controllers/user.controller';
+import DepotService from './services/depot.service';
 import PasswordRecoveryService from './services/password-recovery.service';
 import ProductsService from './services/products.service';
+import ResourceService from './services/resource.service';
 import UserService from './services/user.service';
 
 export class Server {
@@ -47,10 +50,13 @@ export class Server {
                 UserService,
                 ProductsService,
                 PasswordRecoveryService,
+                ResourceService,
+                DepotService,
             ])
             .registerControllerProviders([
                 UserController,
                 ProductsController,
+                DepotController,
             ])
             .boot();
 
