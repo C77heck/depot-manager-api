@@ -50,7 +50,7 @@ class DepotService extends Provider {
             case 'temporary-closed':
                 existingDoc.status = 'temporary-closed';
 
-                await this.productsService.transfer(id, transferDepotId);
+               await this.productsService.transfer(id, transferDepotId);
 
                 return existingDoc.save();
             case 'closed':

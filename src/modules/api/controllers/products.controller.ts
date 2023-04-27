@@ -20,6 +20,7 @@ export class ProductsController extends ExpressController {
         this.router.get('/resources', [], this.initResources.bind(this));
         this.router.post('/', [], this.create.bind(this));
         this.router.put('/:id', [], this.update.bind(this));
+        this.router.put('/send/:id', [], this.send.bind(this));
         this.router.delete('/:id', [], this.delete.bind(this));
     }
 
@@ -57,6 +58,17 @@ export class ProductsController extends ExpressController {
             const depot = await this.depotService.get(depotId);
 
             const data = await this.productsService.update(id, depot);
+
+            res.status(200).json({ payload: data });
+        } catch (err) {
+            return next(handleError(err));
+        }
+    }
+
+    private async send(req: express.Request, res: express.Response, next: NextFunction) {
+        try {
+            const id = req.params?.id;
+            const data = await this.productsService.send(id);
 
             res.status(200).json({ payload: data });
         } catch (err) {

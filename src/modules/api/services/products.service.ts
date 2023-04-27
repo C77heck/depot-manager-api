@@ -9,13 +9,13 @@ import DepotService from './depot.service';
 import HookService from './hook.service';
 
 class ProductsService extends Provider {
+    private collection: ProductModel = Product;
+
     @Inject()
     public depotService: DepotService;
 
     @Inject()
     public hookService: HookService;
-
-    private collection: ProductModel = Product;
 
     public async listByDepot(depot: DepotDocument): Promise<ProductDocument[]> {
         return this.collection.find({ depot: depot });
@@ -51,11 +51,22 @@ class ProductsService extends Provider {
 
         const existingDoc = await this.get(id);
 
-        this.hookService.$productHistory.next({ type: 'arrived', details: { from: existingDoc.depot, to: depot } });
+        this.hookService.$productHistory.next({ type: 'transferred', details: { from: existingDoc.depot, to: depot } });
 
         return existingDoc.update({
             ...existingDoc,
             depot: depot
+        });
+    }
+
+    public async send(id: string): Promise<ProductDocument> {
+        const product = await this.get(id);
+
+        this.hookService.$productHistory.next({ type: 'sent', details: {} });
+
+        return product.update({
+            ...product,
+            status: 'sent'
         });
     }
 
@@ -81,7 +92,7 @@ class ProductsService extends Provider {
         await this.checkCapacity(toDepot, productsToTransfer.length);
 
         return Promise.all(productsToTransfer.map(product => {
-            this.hookService.$productHistory.next({ type: 'arrived', details: { from: product.depot, to: toDepot } });
+            this.hookService.$productHistory.next({ type: 'transferred', details: { from: product.depot, to: toDepot } });
 
             product.depot = toDepot;
 

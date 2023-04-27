@@ -51,9 +51,9 @@ export class Server {
             .registerServiceProviders([
                 UserService,
                 ProductsService,
+                DepotService,
                 PasswordRecoveryService,
                 ResourceService,
-                DepotService,
                 HookService,
                 HistoryService,
             ])

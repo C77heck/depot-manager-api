@@ -5,6 +5,7 @@ import { ResourceDocument } from './resource.document';
 
 export interface ProductDocument extends ResourceDocument {
     depot: DepotDocument;
+    status: 'in-store' | 'sent';
 }
 
 export type ProductModel = Mongoose.Model<ProductDocument, {}, {}>;
@@ -19,6 +20,7 @@ const productSchema = new Schema<ProductDocument, ProductModel>({
         rate: { type: Number, required: true },
         count: { type: Number, required: true },
     },
+    status: { type: String, default: 'in-store' },
     depot: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Depot'
