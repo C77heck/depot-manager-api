@@ -32,7 +32,7 @@ class HistoryService extends Provider {
                     from, to,
                     type: history.type,
                     createdAt: (history as any).createdAt,
-                    production: history.product,
+                    product: history.product,
                 };
             }
 
