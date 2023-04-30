@@ -27,9 +27,9 @@ export class ProductsController extends ExpressController {
                 warehouseId: { validators: [required] },
             })
         ], this.create.bind(this));
-        this.router.put('/transfer/:id', [
+        this.router.put('/transfer', [
             validate.bind(this, {
-                warehouseId: { validators: [required] },
+                toWarehouseId: { validators: [required] },
             })
         ], this.transfer.bind(this));
         this.router.put('/send', [
@@ -75,13 +75,16 @@ export class ProductsController extends ExpressController {
 
     private async transfer(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const id = req.params?.id;
-            const warehouseId = req.body?.warehouseId;
-            const warehouse = await this.warehouseService.get(warehouseId);
+            const toWarehouseId = req.body?.toWarehouseId;
+            const cart = req.body?.cart;
+            for (const prodId of Object.keys(cart)) {
+                const amount = cart[prodId];
+                const product = await this.productsService.get(prodId);
+                const products = await this.productsService.getSimilarProducts(product, amount);
+                await this.productsService.transfer(products, toWarehouseId);
+            }
 
-            const data = await this.productsService.transfer(id, warehouse);
-
-            res.status(200).json({ payload: data });
+            res.status(200).json({ payload: { message: MESSAGE.SUCCESS } });
         } catch (err) {
             return next(handleError(err));
         }

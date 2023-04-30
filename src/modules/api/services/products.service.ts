@@ -25,14 +25,21 @@ class ProductsService extends Provider {
         return this.collection.find({ warehouse, status: 'in-store' });
     }
 
-    public async deleteByWarehouse(product: ProductDocument, limit: number): Promise<any> {
-        const products = await this.collection.find({
+    public async getSimilarProducts(product: ProductDocument, limit: number): Promise<ProductDocument[]> {
+        return this.collection.find({
             productId: product.productId,
             warehouse: product.warehouse,
             status: 'in-store'
         }).limit(limit);
+    }
 
-        return Promise.all(products.map(pr => pr.remove()));
+    public async deleteByWarehouse(product: ProductDocument, limit: number): Promise<any> {
+        const products = await this.getSimilarProducts(product, limit);
+
+        return Promise.all(products.map(pr => {
+            this.hookService.$productHistory.next({ product: pr, type: 'sent', details: {} });
+            return pr.remove();
+        }));
     }
 
     public async getCurrentCapacity(warehouse: WarehouseDocument): Promise<number> {
@@ -52,9 +59,7 @@ class ProductsService extends Provider {
     public async create(data: ResourceDocument, warehouse: WarehouseDocument): Promise<ProductDocument> {
         await this.checkCapacity(warehouse, 1);
 
-        this.hookService.$productHistory.next({ type: 'arrived', details: {} });
-
-        return this.collection.create({
+        const doc = await this.collection.create({
             warehouse,
             productId: data?.productId,
             title: data?.title,
@@ -65,22 +70,26 @@ class ProductsService extends Provider {
             status: 'in-store',
             data,
         });
+
+        this.hookService.$productHistory.next({ product: doc, type: 'arrived', details: {} });
+
+        return doc;
     }
 
-    public async transfer(id: string, warehouse: WarehouseDocument): Promise<ProductDocument> {
+    public async transfer(products: ProductDocument[], warehouse: WarehouseDocument): Promise<void> {
         await this.checkCapacity(warehouse, 1);
 
-        const existingDoc = await this.get(id);
+        for (const product of products) {
+            this.hookService.$productHistory.next({ product: product, type: 'transferred', details: { from: product.warehouse, to: warehouse } });
 
-        this.hookService.$productHistory.next({ type: 'transferred', details: { from: existingDoc.warehouse, to: warehouse } });
-
-        return existingDoc.updateOne({ warehouse });
+            await product.updateOne({ warehouse });
+        }
     }
 
     public async send(id: string): Promise<ProductDocument> {
         const product = await this.get(id);
 
-        this.hookService.$productHistory.next({ type: 'sent', details: {} });
+        this.hookService.$productHistory.next({ product, type: 'sent', details: {} });
 
         product.status = 'sent';
 
@@ -103,7 +112,11 @@ class ProductsService extends Provider {
         await this.checkCapacity(toDepot, productsToTransfer.length);
 
         return Promise.all(productsToTransfer.map(product => {
-            this.hookService.$productHistory.next({ type: 'transferred', details: { from: product.warehouse, to: toDepot } });
+            this.hookService.$productHistory.next({
+                product,
+                type: 'transferred',
+                details: { from: product.warehouse._id.toString(), to: toDepot._id.toString() }
+            });
 
             product.warehouse = toDepot;
 

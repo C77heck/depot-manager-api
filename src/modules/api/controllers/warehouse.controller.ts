@@ -20,6 +20,7 @@ export class WarehouseController extends ExpressController {
 
     public routes() {
         this.router.get('/', [], this.index.bind(this));
+        this.router.get('/available-warehouses', [], this.getAvailableWarehouses.bind(this));
         this.router.get('/:id', [], this.show.bind(this));
         this.router.post('/', [
             validate.bind(this, {
@@ -46,6 +47,16 @@ export class WarehouseController extends ExpressController {
             const data = await this.warehouseService.list();
 
             res.status(200).json({ payload: data });
+        } catch (err) {
+            return next(handleError(err));
+        }
+    }
+
+    private async getAvailableWarehouses(req: express.Request, res: express.Response, next: NextFunction) {
+        try {
+            const data = await this.warehouseService.list();
+
+            res.status(200).json({ payload: data.filter(d => d.status === 'open') });
         } catch (err) {
             return next(handleError(err));
         }
