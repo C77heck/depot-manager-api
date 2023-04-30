@@ -3,11 +3,15 @@ import { NotFound } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
 import { ERROR_MESSAGES } from '../../../libs/constants';
 import Warehouse, { WarehouseDocument, WarehouseModel } from '../models/documents/warehouse.document';
+import HookService from './hook.service';
 import ProductsService from './products.service';
 
 class WarehouseService extends Provider {
     @Inject()
     private productsService: ProductsService;
+
+    @Inject()
+    private hookService: HookService;
 
     private collection: WarehouseModel = Warehouse;
 
@@ -63,22 +67,22 @@ class WarehouseService extends Provider {
         });
     }
 
-    public async changeStatus(id: string, transferWarehouseId: string, newStatus: WarehouseDocument['status']) {
+    public async changeStatus(id: string, transferWarehouseId: string, statusType: WarehouseDocument['status']) {
         const existingDoc = await this.get(id);
-        existingDoc.status = newStatus;
+        existingDoc.status = statusType;
 
-        switch (newStatus) {
+        switch (statusType) {
             case 'temporary-closed':
-                await this.productsService.transferBatch(id, transferWarehouseId);
-
-                return existingDoc.save();
+                this.hookService.$batchTransfer.next({ from: id, to: transferWarehouseId });
+                break;
             case 'permanently-closed':
-                await this.productsService.transferBatch(id, transferWarehouseId);
-
-                return existingDoc.save();
+                this.hookService.$batchTransfer.next({ from: id, to: transferWarehouseId });
+                break;
             default:
-                return existingDoc.save();
+                break;
         }
+
+        return existingDoc.save();
     }
 }
 

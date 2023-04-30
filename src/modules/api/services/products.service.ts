@@ -17,6 +17,10 @@ class ProductsService extends Provider {
     @Inject()
     public hookService: HookService;
 
+    public boot(options?: any) {
+        this.hookService.$batchTransfer.subscribe(({ from, to }) => this.transferBatch(from, to));
+    }
+
     public async listByWarehouse(warehouse: WarehouseDocument): Promise<ProductDocument[]> {
         return this.collection.find({ warehouse, status: 'in-store' });
     }

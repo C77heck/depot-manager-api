@@ -35,7 +35,7 @@ export class WarehouseController extends ExpressController {
         ], this.update.bind(this));
         this.router.put('/change-status/:id', [
             validate.bind(this, {
-                newStatus: { validators: [required] },
+                statusType: { validators: [required] },
                 transferWarehouseId: { validators: [required] },
             })
         ], this.changeStatus.bind(this));
@@ -87,11 +87,10 @@ export class WarehouseController extends ExpressController {
 
     private async changeStatus(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const id = req.body?.id;
+            const id = req.params?.id;
             const transferWarehouseId = req.body?.transferWarehouseId;
-            const newStatus = req.body?.newStatus;
-
-            const data = await this.warehouseService.changeStatus(id, transferWarehouseId, newStatus);
+            const statusType = req.body?.statusType;
+            const data = await this.warehouseService.changeStatus(id, transferWarehouseId, statusType);
 
             res.status(200).json({ payload: data });
         } catch (err) {
