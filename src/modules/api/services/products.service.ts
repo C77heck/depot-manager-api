@@ -2,27 +2,27 @@ import { Inject } from '../../../application/libs/inject.decorator';
 import { Forbidden, NotFound } from '../../../application/models/errors';
 import { Provider } from '../../../application/provider';
 import { ERROR_MESSAGES } from '../../../libs/constants';
-import { DepotDocument } from '../models/documents/depot.document';
 import Product, { ProductDocument, ProductModel } from '../models/documents/product.document';
 import { ResourceDocument } from '../models/documents/resource.document';
-import DepotService from './depot.service';
+import { WarehouseDocument } from '../models/documents/warehouse.document';
 import HookService from './hook.service';
+import WarehouseService from './warehouse.service';
 
 class ProductsService extends Provider {
     private collection: ProductModel = Product;
 
     @Inject()
-    public depotService: DepotService;
+    public warehouseService: WarehouseService;
 
     @Inject()
     public hookService: HookService;
 
-    public async listByDepot(depot: DepotDocument): Promise<ProductDocument[]> {
-        return this.collection.find({ depot: depot });
+    public async listByDepot(warehouse: WarehouseDocument): Promise<ProductDocument[]> {
+        return this.collection.find({ warehouse: warehouse });
     }
 
-    public async getCurrentCapacity(depot: DepotDocument): Promise<number> {
-        return this.collection.count({ depot: depot });
+    public async getCurrentCapacity(warehouse: WarehouseDocument): Promise<number> {
+        return this.collection.count({ warehouse: warehouse });
     }
 
     public async get(id: string): Promise<ProductDocument> {
@@ -35,27 +35,27 @@ class ProductsService extends Provider {
         return doc;
     }
 
-    public async create(data: ResourceDocument, depot: DepotDocument): Promise<ProductDocument> {
-        await this.checkCapacity(depot, 1);
+    public async create(data: ResourceDocument, warehouse: WarehouseDocument): Promise<ProductDocument> {
+        await this.checkCapacity(warehouse, 1);
 
         this.hookService.$productHistory.next({ type: 'arrived', details: {} });
 
         return this.collection.create({
             ...data,
-            depot: depot
+            warehouse: warehouse
         });
     }
 
-    public async update(id: string, depot: DepotDocument): Promise<ProductDocument> {
-        await this.checkCapacity(depot, 1);
+    public async transfer(id: string, warehouse: WarehouseDocument): Promise<ProductDocument> {
+        await this.checkCapacity(warehouse, 1);
 
         const existingDoc = await this.get(id);
 
-        this.hookService.$productHistory.next({ type: 'transferred', details: { from: existingDoc.depot, to: depot } });
+        this.hookService.$productHistory.next({ type: 'transferred', details: { from: existingDoc.warehouse, to: warehouse } });
 
         return existingDoc.update({
             ...existingDoc,
-            depot: depot
+            warehouse: warehouse
         });
     }
 
@@ -70,31 +70,25 @@ class ProductsService extends Provider {
         });
     }
 
-    public async delete(id: string) {
-        const existingDoc = await this.get(id);
-
-        return existingDoc.delete();
-    }
-
-    public async checkCapacity(depot: DepotDocument, requestedCapacity: number) {
-        const currentCapacity = await this.getCurrentCapacity(depot);
-        const availableCapacity = depot.maximumCapacity - currentCapacity;
+    public async checkCapacity(warehouse: WarehouseDocument, requestedCapacity: number) {
+        const capacityUtilization = await this.getCurrentCapacity(warehouse);
+        const availableCapacity = warehouse.maximumCapacity - capacityUtilization;
 
         if (availableCapacity < requestedCapacity) {
             throw new Forbidden(ERROR_MESSAGES.CAPACITY_REACHED);
         }
     }
 
-    public async transfer(transferFromId: string, transferToId: string) {
-        const fromDepot = await this.depotService.get(transferFromId);
-        const toDepot = await this.depotService.get(transferToId);
+    public async transferBatch(transferFromId: string, transferToId: string) {
+        const fromDepot = await this.warehouseService.get(transferFromId);
+        const toDepot = await this.warehouseService.get(transferToId);
         const productsToTransfer = await this.listByDepot(fromDepot);
         await this.checkCapacity(toDepot, productsToTransfer.length);
 
         return Promise.all(productsToTransfer.map(product => {
-            this.hookService.$productHistory.next({ type: 'transferred', details: { from: product.depot, to: toDepot } });
+            this.hookService.$productHistory.next({ type: 'transferred', details: { from: product.warehouse, to: toDepot } });
 
-            product.depot = toDepot;
+            product.warehouse = toDepot;
 
             return product.save();
         }));

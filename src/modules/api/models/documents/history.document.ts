@@ -4,7 +4,7 @@ import { ProductDocument } from './product.document';
 
 export interface HistoryDocument extends Document {
     type: 'arrived' | 'transferred' | 'sent';
-    details: mongoose.Schema.Types.Mixed;
+    details: { from?: string; to?: string; };
     product: ProductDocument;
 }
 

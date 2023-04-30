@@ -1,9 +1,7 @@
 import express, { NextFunction } from 'express';
 import { Inject } from '../../../application/libs/inject.decorator';
-import { BadRequest, Forbidden } from '../../../application/models/errors';
-import { ERROR_MESSAGES, MESSAGE } from '../../../libs/constants';
+import { MESSAGE } from '../../../libs/constants';
 import { handleError } from '../../../libs/handle-error';
-import PasswordRecoveryService from '../services/password-recovery.service';
 import UserService from '../services/user.service';
 import { ExpressController } from './libs/express.controller';
 import { trim } from './libs/helpers/validator/formatters';
@@ -14,9 +12,6 @@ export class UserController extends ExpressController {
     @Inject()
     private userService: UserService;
 
-    @Inject()
-    private passwordRecoveryService: PasswordRecoveryService;
-
     public routes() {
         this.router.post('/login', [
             validate.bind(this, {
@@ -25,33 +20,11 @@ export class UserController extends ExpressController {
             })
         ], this.login.bind(this));
 
-        this.router.post('/forgot-password', [
-            validate.bind(this, {
-                email: { validators: [required, email], formatters: [trim] }
-            })
-        ], this.forgotPassword.bind(this));
-
-        this.router.post('/security-check', [
-            validate.bind(this, {
-                email: { validators: [required, email], formatters: [trim] },
-                answer: { validators: [required], formatters: [trim] }
-            })
-        ], this.securityCheck.bind(this));
-
-        this.router.post('/recover-password', [
-            validate.bind(this, {
-                token: { validators: [required], formatters: [trim] },
-                password: { validators: [required], formatters: [trim] }
-            })
-        ], this.recoverPassword.bind(this));
-
         this.router.post('/register', [
             validate.bind(this, {
                 email: { validators: [required, email], formatters: [trim] },
                 firstName: { validators: [required] },
                 lastName: { validators: [required] },
-                securityAnswer: { validators: [required], formatters: [trim] },
-                securityQuestion: { validators: [required] },
             })
         ], this.register.bind(this));
 
@@ -98,71 +71,6 @@ export class UserController extends ExpressController {
                 payload: {
                     ...userData,
                     token: token,
-                }
-            });
-        } catch (err) {
-            return next(handleError(err));
-        }
-    }
-
-    private async forgotPassword(req: express.Request, res: express.Response, next: NextFunction) {
-        try {
-            this.handleValidation(req);
-            const user = await this.userService.getUserByEmail(req.body?.email);
-
-            const securityQuestion = await this.userService.getSecurityQuestion(user);
-
-            res.json({
-                payload: {
-                    securityQuestion
-                }
-            });
-        } catch (err) {
-            return next(handleError(err));
-        }
-    }
-
-    private async securityCheck(req: express.Request, res: express.Response, next: NextFunction) {
-        try {
-            this.handleValidation(req);
-            const user = await this.userService.getUserByEmail(req.body?.email);
-
-            const isMatch = await this.userService.checkSecurityAnswer(user, req.body?.answer);
-
-            if (!isMatch) {
-                throw new BadRequest(ERROR_MESSAGES.WRONG_ANSWER);
-            }
-
-            const recovery = await this.passwordRecoveryService.getRecoveryToken(user, req.body.answer);
-
-            res.json({
-                payload: {
-                    token: recovery.token
-                }
-            });
-        } catch (err) {
-            return next(handleError(err));
-        }
-    }
-
-    private async recoverPassword(req: express.Request, res: express.Response, next: NextFunction) {
-        try {
-            this.handleValidation(req);
-            const recovery = await this.passwordRecoveryService.get(req.body?.token);
-
-            const isValid = await this.passwordRecoveryService.validateToken(req.body?.token);
-
-            if (!isValid) {
-                throw new Forbidden(ERROR_MESSAGES.GENERIC);
-            }
-
-            await this.userService.setPassword(recovery.user, req.body?.password);
-
-            await this.passwordRecoveryService.fulfillRecovery(recovery);
-
-            res.json({
-                payload: {
-                    message: MESSAGE.SUCCESS.GENERIC
                 }
             });
         } catch (err) {

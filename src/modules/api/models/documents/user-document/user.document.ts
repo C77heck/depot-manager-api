@@ -6,18 +6,11 @@ export interface UserDocument extends Document {
     lastName: string;
     email: string;
     password: string;
-    securityQuestion: string;
-    securityAnswer: string;
     loginStatus: {
         attempts: number;
         isBlocked: boolean;
         timeBlocked: number;
-    },
-    forgotPasswordStatus: {
-        attempts: number;
-        isBlocked: boolean;
-        timeBlocked: number;
-    },
+    };
 }
 
 export interface PublicUserData extends Pick<UserDocument, 'email' | '_id' | 'firstName' | 'lastName'> {
@@ -36,14 +29,7 @@ const userSchema = new Schema<UserDocument, UserModel>({
         attempts: { type: Number, default: 0 },
         isBlocked: { type: Boolean, default: false },
         timeBlocked: { type: Number, default: 0 }
-    },
-    securityQuestion: { type: String, required: true },
-    securityAnswer: { type: String, required: true },
-    forgotPasswordStatus: {
-        attempts: { type: Number, default: 0 },
-        isBlocked: { type: Boolean, default: false },
-        timeBlocked: { type: Number, default: 0 }
-    },
+    }
 });
 
 userSchema.index({ email: 'text' });

@@ -1,10 +1,10 @@
 import Mongoose from 'mongoose';
 import mongoose, { Schema } from 'mongoose';
-import { DepotDocument } from './depot.document';
 import { ResourceDocument } from './resource.document';
+import { WarehouseDocument } from './warehouse.document';
 
 export interface ProductDocument extends ResourceDocument {
-    depot: DepotDocument;
+    warehouse: WarehouseDocument;
     status: 'in-store' | 'sent';
 }
 
@@ -21,9 +21,9 @@ const productSchema = new Schema<ProductDocument, ProductModel>({
         count: { type: Number, required: true },
     },
     status: { type: String, default: 'in-store' },
-    depot: {
+    warehouse: {
         type: mongoose.Schema.Types.ObjectId,
-        ref: 'Depot'
+        ref: 'Warehouse'
     }
 });
 

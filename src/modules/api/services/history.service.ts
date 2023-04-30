@@ -3,12 +3,16 @@ import { Provider } from '../../../application/provider';
 import History, { HistoryModel } from '../models/documents/history.document';
 import { ProductDocument } from '../models/documents/product.document';
 import HookService, { HistoryOptions } from './hook.service';
+import WarehouseService from './warehouse.service';
 
 class HistoryService extends Provider {
     private collection: HistoryModel = History;
 
     @Inject()
     public hookService: HookService;
+
+    @Inject()
+    public warehouseService: WarehouseService;
 
     public boot() {
         this.hookService
@@ -17,7 +21,20 @@ class HistoryService extends Provider {
     }
 
     public async list(product: ProductDocument) {
-        return this.collection.find({ product });
+        const histories = await this.collection.find({ product });
+
+        return Promise.all(histories.map(async history => {
+            if (history.type === 'transferred') {
+                const from = await this.warehouseService.get(history.details?.from || '');
+                const to = await this.warehouseService.get(history.details?.to || '');
+
+                return {
+                    history, from, to
+                };
+            }
+
+            return { history };
+        }));
     }
 
     private async handleHistory(data: HistoryOptions) {

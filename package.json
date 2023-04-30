@@ -1,6 +1,6 @@
 {
-  "name": "depot-management-api",
-  "description": "Depot manager api module",
+  "name": "warehouse-management-api",
+  "description": "Warehouse manager api module",
   "version": "1.0.0",
   "scripts": {
     "build": "./node_modules/.bin/ts-node ./run-build.ts",

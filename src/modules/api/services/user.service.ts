@@ -15,7 +15,7 @@ class UserService extends Provider {
         session.startTransaction();
 
         try {
-            const { email, password, firstName, lastName, securityQuestion, securityAnswer } = req.body;
+            const { email, password, firstName, lastName } = req.body;
             const existingUser = await this.collection.findOne({ email: email });
 
             if (existingUser) {
@@ -33,8 +33,6 @@ class UserService extends Provider {
             let createdUser: any;
             try {
                 createdUser = new this.collection({
-                    securityQuestion,
-                    securityAnswer,
                     email,
                     firstName,
                     lastName,
@@ -164,33 +162,6 @@ class UserService extends Provider {
         };
     }
 
-    public async checkSecurityAnswer(user: UserDocument, answer: string) {
-        const isMatch = user.securityAnswer === answer;
-
-        if (!isMatch) {
-            if (user.forgotPasswordStatus.attempts > 5) {
-                user.forgotPasswordStatus.isBlocked = true;
-                user.forgotPasswordStatus.timeBlocked = Date.now() + (3 * 60 * 1000);
-            } else {
-                user.forgotPasswordStatus.attempts++;
-            }
-
-            await user.save();
-        }
-
-        return isMatch;
-    }
-
-    public async getSecurityQuestion(user: UserDocument) {
-        const securityQuestion = user.securityQuestion;
-
-        if (!securityQuestion) {
-            throw new InternalServerError(ERROR_MESSAGES.GENERIC);
-        }
-
-        return securityQuestion;
-    }
-
     private async checkIfLoginIsBlocked(user: UserDocument) {
         if (!user.loginStatus.isBlocked) {
             return;
@@ -221,26 +192,8 @@ class UserService extends Provider {
         return user.save();
     }
 
-    private async getIsForgottenPasswordBlocked(user: UserDocument) {
-        if (!user.forgotPasswordStatus.isBlocked) {
-            return;
-        }
-
-        if (user.forgotPasswordStatus.timeBlocked <= Date.now()) {
-            user.forgotPasswordStatus.isBlocked = false;
-            user.forgotPasswordStatus.attempts = 0;
-
-            await user.save();
-
-            return;
-        }
-
-        throw new Unauthorized(ERROR_MESSAGES.TOO_MANY_ATTEMPTS);
-    }
-
     private async resetAttempts(user: UserDocument) {
         user.loginStatus.attempts = 0;
-        user.forgotPasswordStatus.attempts = 0;
 
         return user.save();
     }

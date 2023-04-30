@@ -2,17 +2,21 @@ import express, { NextFunction } from 'express';
 import { Inject } from '../../../application/libs/inject.decorator';
 import { handleError } from '../../../libs/handle-error';
 import { ExpressController } from '../controllers/libs/express.controller';
-import DepotService from '../services/depot.service';
+import HistoryService from '../services/history.service';
 import ProductsService from '../services/products.service';
+import WarehouseService from '../services/warehouse.service';
 import { validate } from './libs/helpers/validator/input-validator';
 import { required } from './libs/helpers/validator/validators';
 
-export class DepotController extends ExpressController {
+export class WarehouseController extends ExpressController {
     @Inject()
     private productsService: ProductsService;
 
     @Inject()
-    private depotService: DepotService;
+    private warehouseService: WarehouseService;
+
+    @Inject()
+    private historyService: HistoryService;
 
     public routes() {
         this.router.get('/', [], this.index.bind(this));
@@ -23,26 +27,23 @@ export class DepotController extends ExpressController {
                 maximumCapacity: { validators: [required] },
             })
         ], this.create.bind(this));
-
         this.router.put('/:id', [
             validate.bind(this, {
                 name: { validators: [required] },
                 maximumCapacity: { validators: [required] },
             })
         ], this.update.bind(this));
-
-        this.router.delete('/:id', [
+        this.router.put('/change-status/:id', [
             validate.bind(this, {
-                id: { validators: [required] },
-                deleteType: { validators: [required] },
-                transferDepotId: { validators: [required] },
+                newStatus: { validators: [required] },
+                transferWarehouseId: { validators: [required] },
             })
-        ], this.delete.bind(this));
+        ], this.changeStatus.bind(this));
     }
 
     private async index(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const data = await this.depotService.list();
+            const data = await this.warehouseService.list();
 
             res.status(200).json({ payload: data });
         } catch (err) {
@@ -53,12 +54,12 @@ export class DepotController extends ExpressController {
     private async show(req: express.Request, res: express.Response, next: NextFunction) {
         try {
             const id = req.params?.id || '';
+            const warehouse = await this.warehouseService.get(id);
+            const capacityUtilization = await this.productsService.getCurrentCapacity(warehouse);
+            const products = await this.productsService.listByDepot(warehouse);
+            const histories = await Promise.all(products.map(async product => await this.historyService.list(product)));
 
-            const data = await this.depotService.get(id);
-
-            const currentCapacity = await this.productsService.getCurrentCapacity(data);
-
-            res.status(200).json({ payload: { ...data, currentCapacity } });
+            res.status(200).json({ payload: { warehouse, capacityUtilization, histories } });
         } catch (err) {
             return next(handleError(err));
         }
@@ -66,7 +67,7 @@ export class DepotController extends ExpressController {
 
     private async create(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const data = await this.depotService.create(req.body);
+            const data = await this.warehouseService.create(req.body);
 
             res.status(200).json({ payload: data });
         } catch (err) {
@@ -76,7 +77,7 @@ export class DepotController extends ExpressController {
 
     private async update(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const data = await this.depotService.update(req.params?.id, req.body);
+            const data = await this.warehouseService.update(req.params?.id, req.body);
 
             res.status(200).json({ payload: data });
         } catch (err) {
@@ -84,13 +85,13 @@ export class DepotController extends ExpressController {
         }
     }
 
-    private async delete(req: express.Request, res: express.Response, next: NextFunction) {
+    private async changeStatus(req: express.Request, res: express.Response, next: NextFunction) {
         try {
             const id = req.body?.id;
-            const transferDepotId = req.body?.transferDepotId;
-            const deleteType = req.body?.deleteType;
+            const transferWarehouseId = req.body?.transferWarehouseId;
+            const newStatus = req.body?.newStatus;
 
-            const data = await this.depotService.delete(id, transferDepotId, deleteType);
+            const data = await this.warehouseService.changeStatus(id, transferWarehouseId, newStatus);
 
             res.status(200).json({ payload: data });
         } catch (err) {
