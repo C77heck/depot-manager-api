@@ -20,7 +20,12 @@ export class ProductsController extends ExpressController {
 
     public routes() {
         this.router.get('/resources', [], this.initResources.bind(this));
-        this.router.post('/', [], this.create.bind(this));
+        this.router.post('/', [
+            validate.bind(this, {
+                options: { validators: [required] },
+                warehouseId: { validators: [required] },
+            })
+        ], this.create.bind(this));
         this.router.put('/transfer/:id', [
             validate.bind(this, {
                 warehouseId: { validators: [required] },
@@ -43,14 +48,21 @@ export class ProductsController extends ExpressController {
 
     private async create(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const resourceId = req.body?.resourceId;
+            const options = req.body?.options;
+            const resourceIds = Object.keys(options).map(key => ({ id: key, amount: options[key] }));
+
             const warehouseId = req.body?.warehouseId;
-
-            const product = await this.resourceService.get(resourceId);
             const warehouse = await this.warehouseService.get(warehouseId);
-            const data = await this.productsService.create(product, warehouse);
 
-            res.status(200).json({ payload: data });
+            for (const { id, amount } of resourceIds) {
+                const product = await this.resourceService.get(id);
+
+                for (const i of Array.from({ length: amount })) {
+                    await this.productsService.create(product, warehouse);
+                }
+            }
+
+            res.status(200).json({ payload: { messag: 'success' } });
         } catch (err) {
             return next(handleError(err));
         }
