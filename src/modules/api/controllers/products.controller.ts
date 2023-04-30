@@ -1,5 +1,6 @@
 import express, { NextFunction } from 'express';
 import { Inject } from '../../../application/libs/inject.decorator';
+import { MESSAGE } from '../../../libs/constants';
 import { handleError } from '../../../libs/handle-error';
 import { ExpressController } from '../controllers/libs/express.controller';
 import ProductsService from '../services/products.service';
@@ -31,7 +32,11 @@ export class ProductsController extends ExpressController {
                 warehouseId: { validators: [required] },
             })
         ], this.transfer.bind(this));
-        this.router.put('/send/:id', [], this.send.bind(this));
+        this.router.put('/send', [
+            validate.bind(this, {
+                cart: { validators: [required] },
+            })
+        ], this.send.bind(this));
     }
 
     private async initResources(req: express.Request, res: express.Response, next: NextFunction) {
@@ -84,10 +89,15 @@ export class ProductsController extends ExpressController {
 
     private async send(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const id = req.params?.id;
-            const data = await this.productsService.send(id);
+            const cart = req.body?.cart;
 
-            res.status(200).json({ payload: data });
+            for (const prodId of Object.keys(cart)) {
+                const amount = cart[prodId];
+                const product = await this.productsService.get(prodId);
+                await this.productsService.deleteByWarehouse(product, amount);
+            }
+
+            res.status(200).json({ payload: { message: MESSAGE.SUCCESS } });
         } catch (err) {
             return next(handleError(err));
         }

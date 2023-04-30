@@ -15,10 +15,13 @@ class WarehouseService extends Provider {
         return this.collection.aggregate([
             {
                 $lookup: {
-                    from: 'product',
+                    from: 'products',
                     localField: '_id',
                     foreignField: 'warehouse',
                     as: 'products',
+                    pipeline: [
+                        { $match: { status: 'in-store' } }
+                    ]
                 }
             },
             {

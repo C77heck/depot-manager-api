@@ -16,7 +16,7 @@ class ResourceService extends Provider {
     public async getResources(): Promise<{ categories: string[]; resources: ResourceDocument[] }> {
         const resources = await this.list();
 
-        const categories = await resources.map((resource: ResourceDocument) => resource.category);
+        const categories = resources.map((resource: ResourceDocument) => resource.category) as string[];
 
         return { categories, resources };
     }

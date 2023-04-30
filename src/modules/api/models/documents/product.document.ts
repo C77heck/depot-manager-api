@@ -13,12 +13,12 @@ export type ProductModel = Mongoose.Model<ProductDocument, {}, {}>;
 const productSchema = new Schema<ProductDocument, ProductModel>({
     productId: { type: Number, required: true },
     title: { type: String, required: true, index: 'text' },
-    price: { type: Number, required: true },
-    description: { type: String, required: true },
-    image: { type: String, required: true },
+    price: { type: Number },
+    description: { type: String },
+    image: { type: String },
     rating: {
-        rate: { type: Number, required: true },
-        count: { type: Number, required: true },
+        rate: { type: Number },
+        count: { type: Number },
     },
     status: { type: String, default: 'in-store' },
     warehouse: {
