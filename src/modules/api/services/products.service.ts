@@ -25,6 +25,10 @@ class ProductsService extends Provider {
         return this.collection.find({ warehouse, status: 'in-store' });
     }
 
+    public async listByWarehouseAll(warehouse: WarehouseDocument): Promise<ProductDocument[]> {
+        return this.collection.find({ warehouse });
+    }
+
     public async getSimilarProducts(product: ProductDocument, limit: number): Promise<ProductDocument[]> {
         return this.collection.find({
             productId: product.productId,
@@ -33,12 +37,14 @@ class ProductsService extends Provider {
         }).limit(limit);
     }
 
-    public async deleteByWarehouse(product: ProductDocument, limit: number): Promise<any> {
+    public async sendByWarehouse(product: ProductDocument, limit: number): Promise<any> {
         const products = await this.getSimilarProducts(product, limit);
 
         return Promise.all(products.map(pr => {
             this.hookService.$productHistory.next({ product: pr, type: 'sent', details: {} });
-            return pr.remove();
+            pr.status = 'sent';
+
+            return pr.save();
         }));
     }
 

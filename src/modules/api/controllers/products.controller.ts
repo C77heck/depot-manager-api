@@ -97,7 +97,7 @@ export class ProductsController extends ExpressController {
             for (const prodId of Object.keys(cart)) {
                 const amount = cart[prodId];
                 const product = await this.productsService.get(prodId);
-                await this.productsService.deleteByWarehouse(product, amount);
+                await this.productsService.sendByWarehouse(product, amount);
             }
 
             res.status(200).json({ payload: { message: MESSAGE.SUCCESS } });
