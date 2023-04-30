@@ -68,7 +68,9 @@ export class WarehouseController extends ExpressController {
             const warehouse = await this.warehouseService.get(id);
             const capacityUtilization = await this.productsService.getCurrentCapacity(warehouse);
             const products = await this.productsService.listByWarehouse(warehouse);
-            const histories = await Promise.all(products.map(async product => await this.historyService.list(product)));
+
+            const histories = await this.historyService.getHistories(products);
+            // const histories = await Promise.all(products.map(async product => await this.historyService.list(product)));
 
             res.status(200).json({ payload: { warehouse, capacityUtilization, histories, products } });
         } catch (err) {
