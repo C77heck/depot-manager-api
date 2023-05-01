@@ -83,8 +83,6 @@ class ProductsService extends Provider {
     }
 
     public async transfer(products: ProductDocument[], warehouse: WarehouseDocument): Promise<void> {
-        await this.checkCapacity(warehouse, 1);
-
         for (const product of products) {
             this.hookService.$productHistory.next({ product: product, type: 'transferred', details: { from: product.warehouse, to: warehouse } });
 

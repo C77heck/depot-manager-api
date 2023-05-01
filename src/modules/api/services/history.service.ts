@@ -20,6 +20,39 @@ class HistoryService extends Provider {
             .subscribe(async (data: HistoryOptions) => this.handleHistory(data));
     }
 
+    public async getHistoriesByWarehouse(warehouse: { products: ProductDocument[]; _id: string }) {
+        const histories = await this.collection
+            .find({
+                $or: [
+                    { product: { $in: warehouse.products } },
+                    {
+                        $or: [
+                            { 'details.from': warehouse._id },
+                            { 'details.to': warehouse._id },
+                        ]
+                    },
+                ]
+            })
+            .sort({ createdAt: -1 })
+            .populate('product');
+
+        return Promise.all(histories.map(async history => {
+            if (history.type === 'transferred') {
+                const from = await this.warehouseService.get(history.details?.from || '');
+                const to = await this.warehouseService.get(history.details?.to || '');
+
+                return {
+                    from, to,
+                    type: history.type,
+                    createdAt: (history as any).createdAt,
+                    product: history.product,
+                };
+            }
+
+            return history;
+        }));
+    }
+
     public async getHistories(products: ProductDocument[]) {
         const histories = await this.collection
             .find({ product: { $in: products } })

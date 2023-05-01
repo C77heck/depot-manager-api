@@ -44,9 +44,13 @@ export class WarehouseController extends ExpressController {
 
     private async index(req: express.Request, res: express.Response, next: NextFunction) {
         try {
-            const data = await this.warehouseService.list();
+            const warehouses = await this.warehouseService.list();
 
-            res.status(200).json({ payload: data });
+            for (const warehouse of warehouses) {
+                (warehouse as any).histories = await this.historyService.getHistoriesByWarehouse(warehouse);
+            }
+
+            res.status(200).json({ payload: warehouses });
         } catch (err) {
             return next(handleError(err));
         }
@@ -69,7 +73,7 @@ export class WarehouseController extends ExpressController {
             const capacityUtilization = await this.productsService.getCurrentCapacity(warehouse);
             const products = await this.productsService.listByWarehouse(warehouse);
             const allProducts = await this.productsService.listByWarehouseAll(warehouse);
-            const histories = await this.historyService.getHistories(allProducts);
+            const histories = await this.historyService.list(allProducts);
 
             res.status(200).json({ payload: { warehouse, capacityUtilization, histories, products } });
         } catch (err) {

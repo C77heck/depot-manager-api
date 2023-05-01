@@ -12,7 +12,16 @@ export type HistoryModel = Mongoose.Model<HistoryDocument, {}, {}>;
 
 const historySchema = new Schema<HistoryDocument, HistoryModel>({
     type: { type: String, required: true },
-    details: { type: mongoose.Schema.Types.Mixed },
+    details: {
+        from: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Warehouse'
+        },
+        to: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Warehouse'
+        }
+    },
     product: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'Product'
