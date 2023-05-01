@@ -9,7 +9,7 @@ import HookService from './hook.service';
 import WarehouseService from './warehouse.service';
 
 class ProductsService extends Provider {
-    private collection: ProductModel = Product;
+    public collection: ProductModel = Product;
 
     @Inject()
     public warehouseService: WarehouseService;
