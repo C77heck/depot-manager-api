@@ -38,7 +38,6 @@ class HistoryService extends Provider {
 
         return Promise.all(histories.map(async history => {
             if (history.type === 'transferred') {
-                console.log(history.details?.from);
                 const from = await this.warehouseService.get(history.details?.from || '');
                 const to = await this.warehouseService.get(history.details?.to || '');
 

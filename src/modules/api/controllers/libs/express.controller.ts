@@ -22,7 +22,7 @@ export abstract class ExpressController extends Provider {
 
     private validate(req: express.Request) {
         const errors = (req as any).errors;
-        console.log(errors);
+
         if (!errors?.length) {
             return {
                 errors: [],

@@ -21,6 +21,7 @@ export class ProductsController extends ExpressController {
 
     public routes() {
         this.router.get('/resources', [], this.initResources.bind(this));
+        this.router.get('/random-send', [], this.sendRandomProduct.bind(this));
         this.router.post('/', [
             validate.bind(this, {
                 options: { validators: [required] },
@@ -37,6 +38,20 @@ export class ProductsController extends ExpressController {
                 cart: { validators: [required] },
             })
         ], this.send.bind(this));
+
+    }
+
+    private async sendRandomProduct(req: express.Request, res: express.Response, next: NextFunction) {
+        try {
+            const item = await this.productsService.collection.aggregate([{ $sample: { size: 1 } }]);
+
+            await this.productsService.send(item[0]._id);
+
+            res.status(200).json({ payload: {} });
+        } catch (err) {
+            return next(handleError(err));
+        }
+
     }
 
     private async initResources(req: express.Request, res: express.Response, next: NextFunction) {
