@@ -79,6 +79,8 @@ export class WarehouseController extends ExpressController {
 
     private async create(req: express.Request, res: express.Response, next: NextFunction) {
         try {
+            this.handleValidation(req);
+
             const data = await this.warehouseService.create(req.body);
 
             res.status(200).json({ payload: data });
@@ -89,6 +91,8 @@ export class WarehouseController extends ExpressController {
 
     private async update(req: express.Request, res: express.Response, next: NextFunction) {
         try {
+            this.handleValidation(req);
+
             const data = await this.warehouseService.update(req.params?.id, req.body);
 
             res.status(200).json({ payload: data });
@@ -99,10 +103,20 @@ export class WarehouseController extends ExpressController {
 
     private async changeStatus(req: express.Request, res: express.Response, next: NextFunction) {
         try {
+            this.handleValidation(req);
             const id = req.params?.id;
             const transferWarehouseId = req.body?.transferWarehouseId;
             const statusType = req.body?.statusType;
-            const data = await this.warehouseService.changeStatus(id, transferWarehouseId, statusType);
+
+            const fromWarehouse = await this.warehouseService.get(id);
+            const transferTo = await this.warehouseService.get(transferWarehouseId);
+
+            if (statusType !== 'open') {
+                const products = await this.productsService.listByWarehouse(fromWarehouse);
+                await this.productsService.checkCapacity(transferTo, products?.length);
+            }
+
+            const data = await this.warehouseService.changeStatus(fromWarehouse, transferTo, statusType);
 
             res.status(200).json({ payload: data });
         } catch (err) {

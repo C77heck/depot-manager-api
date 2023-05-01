@@ -21,7 +21,10 @@ class HistoryService extends Provider {
     }
 
     public async getHistories(products: ProductDocument[]) {
-        const histories = await this.collection.find({ product: { $in: products } }).populate('product');
+        const histories = await this.collection
+            .find({ product: { $in: products } })
+            .sort({ createdAt: -1 })
+            .populate('product');
 
         return Promise.all(histories.map(async history => {
             if (history.type === 'transferred') {

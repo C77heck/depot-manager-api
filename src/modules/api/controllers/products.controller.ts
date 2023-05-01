@@ -81,7 +81,9 @@ export class ProductsController extends ExpressController {
                 const amount = cart[prodId];
                 const product = await this.productsService.get(prodId);
                 const products = await this.productsService.getSimilarProducts(product, amount);
-                await this.productsService.transfer(products, toWarehouseId);
+                const toWarehouse = await this.warehouseService.get(toWarehouseId);
+                await this.productsService.checkCapacity(toWarehouse, products.length);
+                await this.productsService.transfer(products, toWarehouse);
             }
 
             res.status(200).json({ payload: { message: MESSAGE.SUCCESS } });

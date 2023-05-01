@@ -14,7 +14,7 @@ export abstract class ExpressController extends Provider {
 
     public handleValidation(req: express.Request) {
         const errors = this.validate(req);
-        console.log(errors);
+
         if (!errors.isValid) {
             throw new UnprocessableEntity(`Invalid inputs passed, please check your data`, errors);
         }

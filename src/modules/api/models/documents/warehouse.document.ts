@@ -10,7 +10,7 @@ export interface WarehouseDocument extends Document {
 export type WarehouseModel = Mongoose.Model<WarehouseDocument, {}, {}>;
 
 const warehouseSchema = new Schema<WarehouseDocument, WarehouseModel>({
-    name: { type: String, required: true },
+    name: { type: String, required: true, unique: true },
     status: { type: String, required: true },
     maximumCapacity: { type: Number, required: true },
 });

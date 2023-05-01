@@ -67,28 +67,27 @@ class WarehouseService extends Provider {
         });
     }
 
-    public async changeStatus(id: string, transferWarehouseId: string, statusType: WarehouseDocument['status']) {
-        const existingDoc = await this.get(id);
-        const transferTo = await this.get(transferWarehouseId);
-        existingDoc.status = statusType;
-
-        if (statusType !== 'open') {
-            const products = await this.productsService.listByWarehouse(existingDoc);
-            await this.productsService.checkCapacity(transferTo, products?.length);
-        }
+    public async changeStatus(fromWarehouse: WarehouseDocument, transferWarehouse: WarehouseDocument, statusType: WarehouseDocument['status']) {
+        fromWarehouse.status = statusType;
 
         switch (statusType) {
             case 'temporary-closed':
-                this.hookService.$batchTransfer.next({ from: id, to: transferWarehouseId });
+                this.hookService.$batchTransfer.next({
+                    from: fromWarehouse._id.toString(),
+                    to: transferWarehouse._id.toString()
+                });
                 break;
             case 'permanently-closed':
-                this.hookService.$batchTransfer.next({ from: id, to: transferWarehouseId });
+                this.hookService.$batchTransfer.next({
+                    from: fromWarehouse._id.toString(),
+                    to: transferWarehouse._id.toString()
+                });
                 break;
             default:
                 break;
         }
 
-        return existingDoc.save();
+        return fromWarehouse.save();
     }
 }
 
