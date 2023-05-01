@@ -43,7 +43,9 @@ class HistoryService extends Provider {
                 const to = await this.warehouseService.get(history.details?.to || '');
 
                 return {
-                    from, to,
+                    from,
+                    to,
+                    _id: history._id,
                     type: history.type,
                     createdAt: (history as any).createdAt,
                     product: history.product,
@@ -66,7 +68,9 @@ class HistoryService extends Provider {
                 const to = await this.warehouseService.get(history.details?.to || '');
 
                 return {
-                    from, to,
+                    from,
+                    to,
+                    _id: history._id,
                     type: history.type,
                     createdAt: (history as any).createdAt,
                     product: history.product,
