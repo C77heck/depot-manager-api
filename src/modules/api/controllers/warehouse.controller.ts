@@ -73,7 +73,9 @@ export class WarehouseController extends ExpressController {
             const capacityUtilization = await this.productsService.getCurrentCapacity(warehouse);
             const products = await this.productsService.listByWarehouse(warehouse);
             const allProducts = await this.productsService.listByWarehouseAll(warehouse);
-            const histories = await this.historyService.getHistories(allProducts);
+            (warehouse as any).products = allProducts;
+
+            const histories = await this.historyService.getHistoriesByWarehouse(warehouse as any);
 
             res.status(200).json({ payload: { warehouse, capacityUtilization, histories, products } });
         } catch (err) {
