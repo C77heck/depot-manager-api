@@ -28,8 +28,8 @@ export class IocContainer {
     /**
      * initiate the singleton services
      */
-    private initiateProviders(providers: Record<any, any>, registeredpPoviders: RegisteredProvider[]) {
-        for (const service of registeredpPoviders) {
+    private initiateProviders(providers: Record<any, any>, registeredProviders: RegisteredProvider[]) {
+        for (const service of registeredProviders) {
             const { key, instance } = Provider.resolve<typeof service>(service);
 
             providers[key] = instance;

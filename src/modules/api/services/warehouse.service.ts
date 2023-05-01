@@ -69,7 +69,13 @@ class WarehouseService extends Provider {
 
     public async changeStatus(id: string, transferWarehouseId: string, statusType: WarehouseDocument['status']) {
         const existingDoc = await this.get(id);
+        const transferTo = await this.get(transferWarehouseId);
         existingDoc.status = statusType;
+
+        if (statusType !== 'open') {
+            const products = await this.productsService.listByWarehouse(existingDoc);
+            await this.productsService.checkCapacity(transferTo, products?.length);
+        }
 
         switch (statusType) {
             case 'temporary-closed':
