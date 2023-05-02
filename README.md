@@ -2,8 +2,7 @@
 
 # poject installation
 
-npm install
-yarn install
+npm install;
 
 # run the project
 
